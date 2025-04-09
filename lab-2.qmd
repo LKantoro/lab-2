@@ -32,25 +32,30 @@ Gallup World Poll:
 story of this graph in words. That is, what is this graph telling you? What do
 you think the authors meant to convey with it?
 
+- The graph is showing the distribution of vaccine trust across countries of the world. The countries are grouped into global region, such as 'Americas' and 'Asia'. The author is trying to show how vaccine trust differs between regions of the world, and within region of the world.
 
 
 2. List the variables that appear to be displayed in this visualization. 
 *Hint: Variables refer to columns in the data.*
 
-
+- There are three variables in this visualization. One is the percent of people in each country who trust vaccines. The other two are country, and global region. 
 
 3. Now that you're versed in the grammar of graphics (e.g., `ggplot`), list the *aesthetics* used and which *variables* are mapped to each.
 
-
+- The aesthetics used include x, y, color, and facet? .
 
 4. What type of graph would you call this? Meaning, what `geom` would you use
 to produce this plot?
 
-
+- geom_point
 
 5. Provide at least four problems or changes that would improve this graph. 
 *Please format your changes as bullet points!*
 
+- The y-axis is not useful as it is directly based off the x-axis.
+- Even though the y-axis is not useful, there is no indication of what it represents.
+- The x-axis does not start at 0, which messes up the scale.
+- The legend at the bottom does not provide any additional information that is not already in the graph.
 
 
 ## Improving the Bad Visualization
@@ -64,6 +69,11 @@ them in separately, but you may also just use one if it suffices.
 
 ```{r}
 #| label: read-in-wellcome-data
+
+library(tidyverse)
+library(readxl)
+
+wgm2018 = read_excel(here::here("wgm2018-dataset-crosstabs-all-countries.xlsx"))
 
 
 ```
@@ -93,27 +103,38 @@ Be sure to cite both the page number and figure title. Do your best to tell the
 story of this graph in words. That is, what is this graph telling you? What do
 you think the authors meant to convey with it?
 
+- Q11C, page 55, level of trust of scientist by country
+
+- The graph is telling us how trust in scientists varies throughout the world.
+
 
 
 8. List the variables that appear to be displayed in this visualization.
 
-
+- The variables used are country, and the mean? of each response, on a scale of 1-4.
 
 9. Now that you're versed in the grammar of graphics (ggplot), list the
 aesthetics used and which variables are specified for each.
 
-
+- 
 
 10. What type of graph would you call this?
 
-
+- 
 
 11. List all of the problems or things you would improve about this graph.  
+
+- The variation in color is not large enough.
+- The scale used to measure distrust is not clear based on the graph.
 
 12. Improve the visualization above by either re-creating it with the issues you identified fixed OR by creating a new visualization that you believe tells the same story better.
 
 ```{r}
 #| label: second-improved-visualization
+
+#download data, create a tibble, separate_wider
+
+leaflet() %>% addTiles
 
 
 ```
@@ -127,27 +148,37 @@ Be sure to cite both the page number and figure title. Do your best to tell the
 story of this graph in words. That is, what is this graph telling you? What do
 you think the authors meant to convey with it?
 
-
+- page 66, Q11E, Chart 3.8:
+Scatterplot exploring the relationship between
+a country’s life expectancy at birth and people
+who trust doctors and nurses
 
 14. List the variables that appear to be displayed in this visualization.
 
-
+- The variables used in this visualization are country, life expectancy at birth, and the answer to the question of 'How much trust do you have in doctors and nurses?".
 
 15. Now that you're versed in the grammar of graphics (ggplot), list the
 aesthetics used and which variables are specified for each.
 
-
+- plotly, 
 
 16. What type of graph would you call this?
 
-
+- scatter plot
 
 17. List all of the problems or things you would improve about this graph.  
+
+- neither axis starts at 0
+- the shape of the points are squares, and several overlap
+- The y-axis label makes viewers tilt their head
+- Colors by another would provide additional information, such as (population or region)
+- x-axis title is in the bottom right
+- The type of graph is in the title of the graph, which is redundant.
 
 18. Improve the visualization above by either re-creating it with the issues you identified fixed OR by creating a new visualization that you believe tells the same story better.
 
 ```{r}
 #| label: third-improved-visualization
 
-
+#scales package for percentage label
 ```
