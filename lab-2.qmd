@@ -111,16 +111,16 @@ you think the authors meant to convey with it?
 
 8. List the variables that appear to be displayed in this visualization.
 
-- The variables used are country, and the mean? of each response, on a scale of 1-4.
+- There are 2 variables used in this visualization. One variable is country. The other variable is a score on a scale of 1-4, answering the question "How much do you trusts scientists in your country?". The mean? score of each country is taken and determines the color of each country on the map.
 
 9. Now that you're versed in the grammar of graphics (ggplot), list the
 aesthetics used and which variables are specified for each.
 
-- 
+- addTiles for the countries
 
 10. What type of graph would you call this?
 
-- 
+- ??
 
 11. List all of the problems or things you would improve about this graph.  
 
@@ -160,7 +160,7 @@ who trust doctors and nurses
 15. Now that you're versed in the grammar of graphics (ggplot), list the
 aesthetics used and which variables are specified for each.
 
-- plotly, 
+- plotly
 
 16. What type of graph would you call this?
 
