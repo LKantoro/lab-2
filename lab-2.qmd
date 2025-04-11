@@ -79,8 +79,12 @@ them in separately, but you may also just use one if it suffices.
 library(tidyverse)
 library(readxl)
 
-wgm2018 = read_excel(here::here("wgm2018-dataset-crosstabs-all-countries.xlsx"), sheet = 2)
+wgm2018_crosstab = read_excel(here::here("wgm2018-dataset-crosstabs-all-countries.xlsx"), sheet = 1)
 
+
+wgm2018_full = read_excel(here::here("wgm2018-dataset-crosstabs-all-countries.xlsx"), sheet = 2)
+
+wgm2018_dict = read_excel(here::here("wgm2018-dataset-crosstabs-all-countries.xlsx"), sheet = 3)
 
 ```
 
@@ -91,14 +95,67 @@ same story better.
 ```{r}
 #| label: new-and-improved-visualization
 
+
 #Q25
+
+#create a new table
 #filter on values of 1,2,3,4,5
-#take mean per country, facet by global region
+#find percentage who answered 1
+#take mean per country
+#make dotplot
+#facet by global region (Regions_Report)
+
+
+countriesstring = wgm2018_dict[1,3]
+
+countriesstring = countriesstring %>% str_replace_all('=', ',')
+
+countriesstring = str_split(countriesstring, ',')
+
+
+countries_df = data.frame(matrix(unlist(countriesstring), ncol = length(countriesstring) * 2, byrow = TRUE))
+
+
+countries_df = countries_df[1:144,1:2]
+
+countries_df = countries_df %>% rename('country_code'= X1)
+
+countries_df = countries_df %>% rename('country'= X2)
+
+
+
+countries_df$country_code = as.numeric(countries_df$country_code)
+
+wgm2018_full_new = left_join(wgm2018_full, countries_df, by = join_by(WP5 == country_code))
 
 
 
 
-wgm2018 %>% ggplot(aes(x = Q25)) +
+#regionsstring = wgm2018_dict[57,3]
+
+
+library(dplyr)
+
+country_counts = wgm2018_full_new %>% group_by(country) %>% summarise(total_count = n())
+
+country_counts
+
+
+vaccine_safe_counts = wgm2018_full_new %>% group_by(country, Q25) %>% summarise(total_count = n())
+
+vaccine_safe_counts = filter(vaccine_safe_counts, Q25 == 1)
+
+vaccine_safe_counts
+
+apple = left_join(country_counts, vaccine_safe_counts, by = join_by(country == country))
+
+apple
+
+apple$banana = apple$total_count.y/apple$total_count.x
+
+apple
+
+apple %>% ggplot(aes(x = banana)) +
   geom_dotplot()
 
 ```
@@ -138,7 +195,7 @@ aesthetics used and which variables are specified for each.
 
 10. What type of graph would you call this?
 
-- This is a map chart.
+- This is a chloropeth map
 
 11. List all of the problems or things you would improve about this graph.  
 
@@ -151,10 +208,22 @@ aesthetics used and which variables are specified for each.
 ```{r}
 #| label: second-improved-visualization
 
+library(leaflet)
 #download data, create a tibble, separate_wider
+#https://r-graph-gallery.com/183-choropleth-map-with-leaflet.html
 
-leaflet() %>% addTiles
 
+countries <- sf::read_sf("https://rstudio.github.io/leaflet/json/countries.geojson")
+countries$category <- factor(sample.int(5L, nrow(countries), TRUE))
+
+
+banana = countries[1,1:4]
+
+factpal <- colorFactor(topo.colors(5), banana$category)
+
+
+leaflet(banana) %>% addPolygons(stroke = FALSE, smoothFactor = 0.2, fillOpacity = 1,
+    color = ~factpal(category))
 
 ```
 
@@ -167,15 +236,13 @@ Be sure to cite both the page number and figure title. Do your best to tell the
 story of this graph in words. That is, what is this graph telling you? What do
 you think the authors meant to convey with it?
 
-- page 66, Q11E, Chart 3.8: "Scatterplot exploring the relationship between a country’s life expectancy at birth and people who trust doctors and nurses"
+- page 112, Q25,26, Chart 5.4: "Scatterplot exploring people’s perceptions of vaccine safety and vaccine effectiveness"
 
-- The graph is showing the positive relationship between a countries life expectancy and their population's trust in doctors and nurses.
-
-- The authors want to convey how countries with higher life expectancy tend to have higher trust in nurses. The inclusion of a line of best fit is mean to quickly capture this relationship.
+- The graph is telling us that countries with higher distrust of vaccines tend to also believe that they are not effective. The authors included a line of best fit to demonstrate the positive trend between lack of vaccine trust and lack of a belief in vaccine effectiveness.
 
 14. List the variables that appear to be displayed in this visualization.
 
-- The variables used in this visualization are country, life expectancy at birth, and the answer to the question of 'How much trust do you have in doctors and nurses?".
+- The variables used in this visualization are country, the percentage of people in each country who believe vaccines are not safe, and the percentage of people in each country who think vaccines are not effective.
 
 15. Now that you're versed in the grammar of graphics (ggplot), list the
 aesthetics used and which variables are specified for each.
@@ -188,17 +255,22 @@ aesthetics used and which variables are specified for each.
 
 17. List all of the problems or things you would improve about this graph.  
 
-- Neither axis starts at 0
-- The shape of the points are squares, and several overlap
+- The legend in unnecessary
 - The y-axis label makes viewers tilt their head
 - Colors would provide additional information, such as (population or region)
 - x-axis title is in the bottom right
-- The type of graph is in the title of the graph, which is redundant.
+- The type of graph is in the title of the graph, which is redundant
+- Gridlines are too frequent
 
 18. Improve the visualization above by either re-creating it with the issues you identified fixed OR by creating a new visualization that you believe tells the same story better.
 
 ```{r}
 #| label: third-improved-visualization
 
+
+
 #scales package for percentage label
+
+
+
 ```
