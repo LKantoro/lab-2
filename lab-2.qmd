@@ -38,11 +38,17 @@ you think the authors meant to convey with it?
 2. List the variables that appear to be displayed in this visualization. 
 *Hint: Variables refer to columns in the data.*
 
-- There are three variables in this visualization. One is the percent of people in each country who trust vaccines. The other two are country, and global region. 
+- There are four variables in this visualization. One is the percent of people in each country who trust vaccines. The y-axis variable is based directly off the order of vaccine trust, on the x-axis. The other two variables are country, and global region. 
 
 3. Now that you're versed in the grammar of graphics (e.g., `ggplot`), list the *aesthetics* used and which *variables* are mapped to each.
 
-- The aesthetics used include x, y, color, and facet? .
+- The aesthetics used include x, y, and color. 
+
+- Vaccine trust percentage is mapped to x, ranking within each global region is mapped to y.
+
+- The global region is mapped to the color aesthetic within geom_point.
+
+- The country variable is mapped to the label aesthetic.
 
 4. What type of graph would you call this? Meaning, what `geom` would you use
 to produce this plot?
@@ -73,7 +79,7 @@ them in separately, but you may also just use one if it suffices.
 library(tidyverse)
 library(readxl)
 
-wgm2018 = read_excel(here::here("wgm2018-dataset-crosstabs-all-countries.xlsx"))
+wgm2018 = read_excel(here::here("wgm2018-dataset-crosstabs-all-countries.xlsx"), sheet = 2)
 
 
 ```
@@ -85,6 +91,15 @@ same story better.
 ```{r}
 #| label: new-and-improved-visualization
 
+#Q25
+#filter on values of 1,2,3,4,5
+#take mean per country, facet by global region
+
+
+
+
+wgm2018 %>% ggplot(aes(x = Q25)) +
+  geom_dotplot()
 
 ```
 
@@ -103,15 +118,18 @@ Be sure to cite both the page number and figure title. Do your best to tell the
 story of this graph in words. That is, what is this graph telling you? What do
 you think the authors meant to convey with it?
 
+- Page 55, Chart 3.3: "Map of countries according to levels of Trust in Scientists"
+
 - Q11C, page 55, level of trust of scientist by country
 
-- The graph is telling us how trust in scientists varies throughout the world.
+- The graph is demonstrating how trust in scientists varies throughout the world. Darker shades of green represent higher trust in scientists.
 
+- The authors want the reader to discern what causes the population of certain countries to have higher trust in scientists than others.
 
 
 8. List the variables that appear to be displayed in this visualization.
 
-- There are 2 variables used in this visualization. One variable is country. The other variable is a score on a scale of 1-4, answering the question "How much do you trusts scientists in your country?". The mean? score of each country is taken and determines the color of each country on the map.
+- There are 2 variables used in this visualization. One variable is country. The other variable is a score on a scale of 1-4, answering the question "How much do you trusts scientists in your country?". The mean score of each country is taken and determines the color of each country on the map.
 
 9. Now that you're versed in the grammar of graphics (ggplot), list the
 aesthetics used and which variables are specified for each.
@@ -120,12 +138,13 @@ aesthetics used and which variables are specified for each.
 
 10. What type of graph would you call this?
 
-- ??
+- This is a map chart.
 
 11. List all of the problems or things you would improve about this graph.  
 
 - The variation in color is not large enough.
 - The scale used to measure distrust is not clear based on the graph.
+- The subtitle does not clarify what the scale means.
 
 12. Improve the visualization above by either re-creating it with the issues you identified fixed OR by creating a new visualization that you believe tells the same story better.
 
@@ -148,10 +167,11 @@ Be sure to cite both the page number and figure title. Do your best to tell the
 story of this graph in words. That is, what is this graph telling you? What do
 you think the authors meant to convey with it?
 
-- page 66, Q11E, Chart 3.8:
-Scatterplot exploring the relationship between
-a country’s life expectancy at birth and people
-who trust doctors and nurses
+- page 66, Q11E, Chart 3.8: "Scatterplot exploring the relationship between a country’s life expectancy at birth and people who trust doctors and nurses"
+
+- The graph is showing the positive relationship between a countries life expectancy and their population's trust in doctors and nurses.
+
+- The authors want to convey how countries with higher life expectancy tend to have higher trust in nurses. The inclusion of a line of best fit is mean to quickly capture this relationship.
 
 14. List the variables that appear to be displayed in this visualization.
 
@@ -164,14 +184,14 @@ aesthetics used and which variables are specified for each.
 
 16. What type of graph would you call this?
 
-- scatter plot
+- This is a scatter plot.
 
 17. List all of the problems or things you would improve about this graph.  
 
-- neither axis starts at 0
-- the shape of the points are squares, and several overlap
+- Neither axis starts at 0
+- The shape of the points are squares, and several overlap
 - The y-axis label makes viewers tilt their head
-- Colors by another would provide additional information, such as (population or region)
+- Colors would provide additional information, such as (population or region)
 - x-axis title is in the bottom right
 - The type of graph is in the title of the graph, which is redundant.
 
