@@ -134,6 +134,17 @@ wgm2018_full_new = left_join(wgm2018_full, countries_df, by = join_by(WP5 == cou
 #regionsstring = wgm2018_dict[57,3]
 
 
+#0=Not assigned, 
+#1=Eastern Africa,2=Central Africa,3=North Africa,4=Southern Africa,5=Western Africa,
+#6=Central America and Mexico,7=Northern America,8=South America,
+#9=Central Asia,10=East Asia,11=Southeast Asia,12=South Asia,
+#13=Middle East,
+#14=Eastern Europe,15=Northern Europe,16=Southern Europe,17=Western Europe,
+#18=Aus/NZ,
+
+
+
+
 library(dplyr)
 
 country_counts = wgm2018_full_new %>% group_by(country) %>% summarise(total_count = n())
@@ -142,6 +153,8 @@ country_counts
 
 
 vaccine_safe_counts = wgm2018_full_new %>% group_by(country, Q25) %>% summarise(total_count = n())
+
+vaccine_safe_counts
 
 vaccine_safe_counts = filter(vaccine_safe_counts, Q25 == 1)
 
@@ -268,9 +281,63 @@ aesthetics used and which variables are specified for each.
 #| label: third-improved-visualization
 
 
+wgm2018_full_new
+
+
+
+vaccine_effective_counts = wgm2018_full_new %>% group_by(country, Q26) %>% summarise(total_count = n())
+
+vaccine_effective_counts
+
+vaccine_effective_counts = filter(vaccine_effective_counts, Q26 == 1)
+
+vaccine_effective_counts
+
+
+
+percent_effective = left_join(country_counts, vaccine_effective_counts, by = join_by(country == country))
+
+
+percent_effective_and_safe = left_join(percent_effective, vaccine_safe_counts, by = join_by(country == country))
+
+percent_effective_and_safe
+
+
+percent_effective_and_safe = percent_effective_and_safe %>% rename('num_safe'= total_count)
+
+percent_effective_and_safe = percent_effective_and_safe %>% rename('num_effective'= total_count.y)
+
+percent_effective_and_safe = percent_effective_and_safe %>% rename('total'= total_count.x)
+
+percent_effective_and_safe
+
+percent_effective_and_safe$perc_safe = percent_effective_and_safe$num_safe/percent_effective_and_safe$total * 100
+
+percent_effective_and_safe$perc_effective = percent_effective_and_safe$num_effective/percent_effective_and_safe$total * 100
+
+
+percent_effective_and_safe
 
 #scales package for percentage label
 
 
+library(plotly)
+
+
+best_fit_line <- lm(perc_effective ~ perc_safe, data = percent_effective_and_safe)
+
+
+
+fig <- plot_ly(data = percent_effective_and_safe, x = ~perc_safe, y = ~perc_effective, type = "scatter", text = ~country) %>% layout(
+    plot_bgcolor='white',
+    xaxis = list(ticksuffix = "%", range = list(0, 100)),
+    yaxis = list(ticksuffix="%", range = list(0, 100)),
+    title = "Belief in Vaccine Safety Versus Effectiveness in Different Countries") %>% 
+  add_lines(x = ~perc_safe, y = fitted(best_fit_line))
+
+fig
+
+
+#color by world region, subtitle
 
 ```
