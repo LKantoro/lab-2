@@ -5,6 +5,13 @@ editor: source
 embed-resources: true
 ---
 
+
+```{r}
+library(tidyverse)
+library(dplyr)
+
+```
+
 # Instructions
 
 **Create a Quarto file for ALL Lab 2 (no separate files for Parts 1 and 2).**
@@ -131,7 +138,43 @@ wgm2018_full_new = left_join(wgm2018_full, countries_df, by = join_by(WP5 == cou
 
 
 
-#regionsstring = wgm2018_dict[57,3]
+regionsstring = wgm2018_dict[57,3]
+
+regionsstring = regionsstring %>% str_replace_all('=', ',')
+
+regionsstring = str_split(regionsstring, ',')
+
+regions_df = data.frame(matrix(unlist(regionsstring), ncol = length(regionsstring) * 2, byrow = TRUE))
+
+regions_df = regions_df[1:19, 1:2]
+
+#create a new column of region
+#Asia 9, 10, 11, 12, 18
+#Middle East and North Africa 3, 13
+#Sub-Saharan Africa 1, 2, 4, 5
+#Americas 6, 7, 8,
+#Europe 15,16, 17
+#Former Soviet Union 14
+
+regions_df = regions_df %>% rename('region_code' = X1)
+
+regions_df = regions_df %>% rename('region_name' = X2)
+
+
+regions_df$region_code = as.numeric(regions_df$region_code)
+
+
+regions_df['map_region'] = case_when(regions_df[['region_code']] %in% c(9,10,11,12, 18) ~ 'Asia and Australia',
+          regions_df[['region_code']] %in% c(1,2,4,5) ~ 'Sub-Saharan Africa',
+          regions_df[['region_code']] %in% c(6,7,8) ~ 'Americas',
+          regions_df[['region_code']] %in% c(15,16,17) ~ 'Europe',
+          regions_df[['region_code']] %in% c(3,13) ~ 'Middle East and North Africa',
+          regions_df[['region_code']] == 14 ~ 'Former Soviet Union',
+          regions_df[['region_code']] == 0 ~ 'Not Assigned')
+
+regions_df
+
+wgm2018_full_new2 = left_join(wgm2018_full_new, regions_df, by = join_by(Regions_Report == region_code))
 
 
 #0=Not assigned, 
@@ -142,33 +185,34 @@ wgm2018_full_new = left_join(wgm2018_full, countries_df, by = join_by(WP5 == cou
 #14=Eastern Europe,15=Northern Europe,16=Southern Europe,17=Western Europe,
 #18=Aus/NZ,
 
+```
+
+```{r}
 
 
 
-library(dplyr)
-
-country_counts = wgm2018_full_new %>% group_by(country) %>% summarise(total_count = n())
-
-country_counts
+country_counts = wgm2018_full_new2 %>% group_by(country) %>% summarise(total_count = n())
 
 
-vaccine_safe_counts = wgm2018_full_new %>% group_by(country, Q25) %>% summarise(total_count = n())
 
-vaccine_safe_counts
+vaccine_safe_counts = wgm2018_full_new2 %>% group_by(country, Q25) %>% summarise(total_count = n())
 
-vaccine_safe_counts = filter(vaccine_safe_counts, Q25 == 1)
+vaccine_safe_counts = filter(vaccine_safe_counts, Q25 == '1')
 
-vaccine_safe_counts
 
-apple = left_join(country_counts, vaccine_safe_counts, by = join_by(country == country))
+new_graph1_tibble = left_join(country_counts, vaccine_safe_counts, by = join_by(country == country))
 
-apple
 
-apple$banana = apple$total_count.y/apple$total_count.x
 
-apple
+new_graph1_tibble$value = new_graph1_tibble$total_count.y/new_graph1_tibble$total_count.x
 
-apple %>% ggplot(aes(x = banana)) +
+wgm2018_full_new2[61:63]
+
+
+new_graph1_tibble2 = left_join(new_graph1_tibble, regions_df, by = join_by(Regions_Report == region_code))
+
+
+new_graph1_tibble2 %>% ggplot(aes(x = value)) +
   geom_dotplot()
 
 ```
