@@ -9,7 +9,11 @@ embed-resources: true
 ```{r}
 library(tidyverse)
 library(dplyr)
-
+library(leaflet)
+library(dplyr)
+library(sf)
+library(plotly)
+library(readxl)
 ```
 
 # Instructions
@@ -60,7 +64,7 @@ you think the authors meant to convey with it?
 4. What type of graph would you call this? Meaning, what `geom` would you use
 to produce this plot?
 
-- geom_point
+- geom_dotplot()
 
 5. Provide at least four problems or changes that would improve this graph. 
 *Please format your changes as bullet points!*
@@ -83,16 +87,11 @@ them in separately, but you may also just use one if it suffices.
 ```{r}
 #| label: read-in-wellcome-data
 
-library(tidyverse)
-library(readxl)
-
 wgm2018_crosstab = read_excel(here::here("wgm2018-dataset-crosstabs-all-countries.xlsx"), sheet = 1)
-
 
 wgm2018_full = read_excel(here::here("wgm2018-dataset-crosstabs-all-countries.xlsx"), sheet = 2)
 
 wgm2018_dict = read_excel(here::here("wgm2018-dataset-crosstabs-all-countries.xlsx"), sheet = 3)
-
 ```
 
 6. Improve the visualization above by either re-creating it with the issues you
@@ -112,110 +111,107 @@ same story better.
 #make dotplot
 #facet by global region (Regions_Report)
 
-
-countriesstring = wgm2018_dict[1,3]
-
-countriesstring = countriesstring %>% str_replace_all('=', ',')
-
-countriesstring = str_split(countriesstring, ',')
+countriesstringsplit = str_split(wgm2018_dict[1,3], ',')
 
 
-countries_df = data.frame(matrix(unlist(countriesstring), ncol = length(countriesstring) * 2, byrow = TRUE))
+countriesdf = as.data.frame(countriesstringsplit, col.names = c("country"))
 
-
-countries_df = countries_df[1:144,1:2]
-
-countries_df = countries_df %>% rename('country_code'= X1)
-
-countries_df = countries_df %>% rename('country'= X2)
+countriesdf = countriesdf %>%
+  filter(!row_number() %in% c(145))
 
 
 
-countries_df$country_code = as.numeric(countries_df$country_code)
-
-wgm2018_full_new = left_join(wgm2018_full, countries_df, by = join_by(WP5 == country_code))
+countriesdf = countriesdf %>% separate_wider_delim(country, delim = "=", names = c("country_code", "country_name"))
 
 
+countriesdf = countriesdf %>% mutate(country_code = as.numeric(country_code))
+```
 
 
-regionsstring = wgm2018_dict[57,3]
 
-regionsstring = regionsstring %>% str_replace_all('=', ',')
+```{r}
+#merging to make full dataset have country names
+wgm2018_full_new = left_join(wgm2018_full, countriesdf, by = join_by(WP5 == country_code))
+wgm2018_full_new
+```
 
-regionsstring = str_split(regionsstring, ',')
 
-regions_df = data.frame(matrix(unlist(regionsstring), ncol = length(regionsstring) * 2, byrow = TRUE))
 
-regions_df = regions_df[1:19, 1:2]
+
+```{r}
+regionsstringsplit = str_split(wgm2018_dict[57,3], ',')
+
+
+regionsdf = as.data.frame(regionsstringsplit, col.names = c("region"))
+
+regionsdf = regionsdf %>%
+  filter(!row_number() %in% c(20))
+
+
+regionsdf = regionsdf %>% separate_wider_delim(region, delim = "=", names = c("region_code", "region_name"))
+
+
+regionsdf = regionsdf %>% mutate(region_code = as.numeric(region_code))
+
+regionsdf['map_region'] = case_when(
+          regionsdf[['region_code']] %in% c(9,10,11,12, 18) ~ 'Asia and Australia',
+          regionsdf[['region_code']] %in% c(1,2,4,5) ~ 'Sub-Saharan Africa',
+          regionsdf[['region_code']] %in% c(6,7,8) ~ 'Americas',
+          regionsdf[['region_code']] %in% c(15,16,17) ~ 'Europe',
+          regionsdf[['region_code']] %in% c(3,13) ~ 'Middle East and North Africa',
+          regionsdf[['region_code']] == 14 ~ 'Former Soviet Union',
+          regionsdf[['region_code']] == 0 ~ 'Not Assigned')
 
 #create a new column of region
 #Asia 9, 10, 11, 12, 18
 #Middle East and North Africa 3, 13
 #Sub-Saharan Africa 1, 2, 4, 5
 #Americas 6, 7, 8,
-#Europe 15,16, 17
+#Europe 15, 16, 17
 #Former Soviet Union 14
-
-regions_df = regions_df %>% rename('region_code' = X1)
-
-regions_df = regions_df %>% rename('region_name' = X2)
-
-
-regions_df$region_code = as.numeric(regions_df$region_code)
-
-
-regions_df['map_region'] = case_when(regions_df[['region_code']] %in% c(9,10,11,12, 18) ~ 'Asia and Australia',
-          regions_df[['region_code']] %in% c(1,2,4,5) ~ 'Sub-Saharan Africa',
-          regions_df[['region_code']] %in% c(6,7,8) ~ 'Americas',
-          regions_df[['region_code']] %in% c(15,16,17) ~ 'Europe',
-          regions_df[['region_code']] %in% c(3,13) ~ 'Middle East and North Africa',
-          regions_df[['region_code']] == 14 ~ 'Former Soviet Union',
-          regions_df[['region_code']] == 0 ~ 'Not Assigned')
-
-regions_df
-
-wgm2018_full_new2 = left_join(wgm2018_full_new, regions_df, by = join_by(Regions_Report == region_code))
-
-
-#0=Not assigned, 
-#1=Eastern Africa,2=Central Africa,3=North Africa,4=Southern Africa,5=Western Africa,
-#6=Central America and Mexico,7=Northern America,8=South America,
-#9=Central Asia,10=East Asia,11=Southeast Asia,12=South Asia,
-#13=Middle East,
-#14=Eastern Europe,15=Northern Europe,16=Southern Europe,17=Western Europe,
-#18=Aus/NZ,
-
 ```
 
 ```{r}
+#merging to add region names to big data frame
+wgm2018_full_new2 = left_join(wgm2018_full_new, regionsdf, by = join_by(Regions_Report == region_code))
 
+countries_and_regions = distinct(wgm2018_full_new2[61:63])
+```
 
+```{r}
+country_counts = wgm2018_full_new2 %>% group_by(country_name) %>% summarise(total_count = n()) %>%
+  rename('total_surveyed' = total_count)
 
-country_counts = wgm2018_full_new2 %>% group_by(country) %>% summarise(total_count = n())
-
-
-
-vaccine_safe_counts = wgm2018_full_new2 %>% group_by(country, Q25) %>% summarise(total_count = n())
+vaccine_safe_counts = wgm2018_full_new2 %>% 
+  group_by(country_name, Q25) %>% summarise(total_count = n()) %>%
+  rename('total_safe' = total_count)
 
 vaccine_safe_counts = filter(vaccine_safe_counts, Q25 == '1')
 
-
-new_graph1_tibble = left_join(country_counts, vaccine_safe_counts, by = join_by(country == country))
-
+```
 
 
-new_graph1_tibble$value = new_graph1_tibble$total_count.y/new_graph1_tibble$total_count.x
+```{r}
+graph1_tibble = left_join(country_counts, vaccine_safe_counts, by = join_by(country_name == country_name))
 
-wgm2018_full_new2[61:63]
+graph1_tibble$value = graph1_tibble$total_safe/graph1_tibble$total_surveyed
+
+graph1_tibble2 = left_join(graph1_tibble, countries_and_regions, by = join_by(country_name == country_name))
 
 
-new_graph1_tibble2 = left_join(new_graph1_tibble, regions_df, by = join_by(Regions_Report == region_code))
+graph1_tibble2 %>% ggplot(aes(x = value, fill = map_region)) +
+  geom_dotplot(binwidth = .02) + facet_grid(rows = vars(map_region)) +
+  theme(panel.grid.minor = element_blank(), panel.grid.major.y = element_blank(), 
+  plot.title.position = "plot", axis.text.y = element_blank()) + 
+  #theme_minimal() +
+  labs(x = "Proportion", 
+       y = "",
+       title = "Proportion of People Who Believe Vaccines Are Very Effective By Country and Region")
 
-
-new_graph1_tibble2 %>% ggplot(aes(x = value)) +
-  geom_dotplot()
+#change legend label
 
 ```
+
 
 # Part Two: Broad Visualization Improvement
 
@@ -265,22 +261,58 @@ aesthetics used and which variables are specified for each.
 ```{r}
 #| label: second-improved-visualization
 
-library(leaflet)
 #download data, create a tibble, separate_wider
 #https://r-graph-gallery.com/183-choropleth-map-with-leaflet.html
 
 
-countries <- sf::read_sf("https://rstudio.github.io/leaflet/json/countries.geojson")
-countries$category <- factor(sample.int(5L, nrow(countries), TRUE))
+download.file(
+  "https://raw.githubusercontent.com/holtzy/R-graph-gallery/master/DATA/world_shape_file.zip",
+  destfile = "DATA/world_shape_file.zip"
+)
+
+system("unzip DATA/world_shape_file.zip")
 
 
-banana = countries[1,1:4]
+world_sf <- read_sf(paste0(
+  getwd(), "/DATA/world_shape_file/",
+  "TM_WORLD_BORDERS_SIMPL-0.3.shp"
+))
 
-factpal <- colorFactor(topo.colors(5), banana$category)
+world_sf <- world_sf %>%
+  mutate(POP2005 = ifelse(POP2005 == 0, NA, round(POP2005 / 1000000, 2)))
 
 
-leaflet(banana) %>% addPolygons(stroke = FALSE, smoothFactor = 0.2, fillOpacity = 1,
-    color = ~factpal(category))
+
+# Basic choropleth with leaflet
+m <- leaflet(world_sf) %>%
+  addTiles() %>%
+  setView(lat = 10, lng = 0, zoom = 2) %>%
+  addPolygons(fillColor = ~ mypalette(POP2005), stroke = FALSE)
+
+m
+class(world_sf)
+
+```
+
+
+```{r}
+new_graph1_tibble
+
+
+
+
+
+graph2_df = left_join(new_graph1_tibble, world_sf, by = join_by(country == NAME))
+
+bins = c(0, 10, 20, 50, 100, 200, 500, 1000, Inf)
+
+pal = colorBin("YlOrRd", domain = apple$value, bins = bins)
+
+class(apple)
+
+graph2_df = as.data.frame(graph2_df)
+
+leaflet(graph2_df) %>% addTiles() %>% addPolygons(fillColor = ~value, weight = 2)
 
 ```
 
@@ -312,7 +344,7 @@ aesthetics used and which variables are specified for each.
 
 17. List all of the problems or things you would improve about this graph.  
 
-- The legend in unnecessary
+- The legend is unnecessary
 - The y-axis label makes viewers tilt their head
 - Colors would provide additional information, such as (population or region)
 - x-axis title is in the bottom right
@@ -325,19 +357,19 @@ aesthetics used and which variables are specified for each.
 #| label: third-improved-visualization
 
 
-wgm2018_full_new
+wgm2018_full_new2
 
 
 
 vaccine_effective_counts = wgm2018_full_new %>% group_by(country, Q26) %>% summarise(total_count = n())
 
-vaccine_effective_counts
-
 vaccine_effective_counts = filter(vaccine_effective_counts, Q26 == 1)
 
 vaccine_effective_counts
 
+```
 
+```{r}
 
 percent_effective = left_join(country_counts, vaccine_effective_counts, by = join_by(country == country))
 
@@ -362,22 +394,26 @@ percent_effective_and_safe$perc_effective = percent_effective_and_safe$num_effec
 
 percent_effective_and_safe
 
+percent_effective_and_safe = left_join(percent_effective_and_safe, new_graph1_tibble2[c(1,7)], by = join_by(country == country))
+
+```
+
+```{r}
 #scales package for percentage label
 
-
-library(plotly)
 
 
 best_fit_line <- lm(perc_effective ~ perc_safe, data = percent_effective_and_safe)
 
 
 
-fig <- plot_ly(data = percent_effective_and_safe, x = ~perc_safe, y = ~perc_effective, type = "scatter", text = ~country) %>% layout(
-    plot_bgcolor='white',
-    xaxis = list(ticksuffix = "%", range = list(0, 100)),
-    yaxis = list(ticksuffix="%", range = list(0, 100)),
-    title = "Belief in Vaccine Safety Versus Effectiveness in Different Countries") %>% 
-  add_lines(x = ~perc_safe, y = fitted(best_fit_line))
+fig = plot_ly(data = percent_effective_and_safe, x = ~perc_safe, y = ~perc_effective,
+    type = "scatter", text = ~country, color = ~map_region) %>%
+  layout(plot_bgcolor='white',
+    xaxis = list(ticksuffix = "%", range = list(0, 100), title = ""),
+    yaxis = list(ticksuffix="%", range = list(0, 100), title = ""),
+    title = "Belief in Vaccine Safety Versus Belief in Vaccine Effectiveness in Different Countries")
+  
 
 fig
 
