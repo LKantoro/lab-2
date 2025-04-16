@@ -208,7 +208,7 @@ graph1_tibble2 %>% ggplot(aes(x = value, fill = map_region)) +
        y = "",
        title = "Proportion of People Who Believe Vaccines Are Very Effective By Country and Region")
 
-#change legend label
+#change legend label, order by average or median
 
 ```
 
@@ -284,37 +284,41 @@ world_sf <- world_sf %>%
 
 
 # Basic choropleth with leaflet
-m <- leaflet(world_sf) %>%
-  addTiles() %>%
-  setView(lat = 10, lng = 0, zoom = 2) %>%
-  addPolygons(fillColor = ~ mypalette(POP2005), stroke = FALSE)
+#m <- leaflet(world_sf) %>%
+#  addTiles() %>%
+#  setView(lat = 10, lng = 0, zoom = 2) %>%
+#  addPolygons(fillColor = ~ mypalette(POP2005), stroke = FALSE)
 
-m
+#m
 class(world_sf)
 
 ```
 
 
 ```{r}
-new_graph1_tibble
+graph1_tibble2
 
 
+class(world_sf)
 
 
+graph2_df = right_join(graph1_tibble2, world_sf, by = join_by(country_name == NAME))
 
-graph2_df = left_join(new_graph1_tibble, world_sf, by = join_by(country == NAME))
+bins = c(0, .10, .20, .50, .7, .8, .9, 1)
 
-bins = c(0, 10, 20, 50, 100, 200, 500, 1000, Inf)
+pal = colorBin("YlOrRd", domain = graph2_df$value, bins = bins)
 
-pal = colorBin("YlOrRd", domain = apple$value, bins = bins)
 
-class(apple)
+#converting data.frame to sf: https://r-spatial.github.io/sf/reference/sf.html
+graph2_df = st_sf(graph2_df)
 
-graph2_df = as.data.frame(graph2_df)
+graph2_df$value
 
 leaflet(graph2_df) %>% addTiles() %>% addPolygons(fillColor = ~value, weight = 2)
 
 ```
+
+
 
 ## Third Data Visualization Improvement
 
@@ -361,40 +365,29 @@ wgm2018_full_new2
 
 
 
-vaccine_effective_counts = wgm2018_full_new %>% group_by(country, Q26) %>% summarise(total_count = n())
+vaccine_effective_counts = wgm2018_full_new2 %>% group_by(country_name, map_region, Q26) %>% summarise(total_count = n()) %>% rename('total_effective'= total_count)
 
 vaccine_effective_counts = filter(vaccine_effective_counts, Q26 == 1)
 
 vaccine_effective_counts
-
 ```
 
 ```{r}
 
-percent_effective = left_join(country_counts, vaccine_effective_counts, by = join_by(country == country))
+percent_effective = inner_join(country_counts, vaccine_effective_counts, by = join_by(country_name == country_name))
 
 
-percent_effective_and_safe = left_join(percent_effective, vaccine_safe_counts, by = join_by(country == country))
-
-percent_effective_and_safe
-
-
-percent_effective_and_safe = percent_effective_and_safe %>% rename('num_safe'= total_count)
-
-percent_effective_and_safe = percent_effective_and_safe %>% rename('num_effective'= total_count.y)
-
-percent_effective_and_safe = percent_effective_and_safe %>% rename('total'= total_count.x)
+percent_effective_and_safe = full_join(percent_effective, vaccine_safe_counts, by = join_by(country_name == country_name))
 
 percent_effective_and_safe
 
-percent_effective_and_safe$perc_safe = percent_effective_and_safe$num_safe/percent_effective_and_safe$total * 100
 
-percent_effective_and_safe$perc_effective = percent_effective_and_safe$num_effective/percent_effective_and_safe$total * 100
+percent_effective_and_safe$perc_safe = percent_effective_and_safe$total_safe/percent_effective_and_safe$total_surveyed * 100
+
+percent_effective_and_safe$perc_effective = percent_effective_and_safe$total_effective/percent_effective_and_safe$total_surveyed * 100
 
 
 percent_effective_and_safe
-
-percent_effective_and_safe = left_join(percent_effective_and_safe, new_graph1_tibble2[c(1,7)], by = join_by(country == country))
 
 ```
 
@@ -408,7 +401,7 @@ best_fit_line <- lm(perc_effective ~ perc_safe, data = percent_effective_and_saf
 
 
 fig = plot_ly(data = percent_effective_and_safe, x = ~perc_safe, y = ~perc_effective,
-    type = "scatter", text = ~country, color = ~map_region) %>%
+    type = "scatter", text = ~country_name, color = ~map_region) %>%
   layout(plot_bgcolor='white',
     xaxis = list(ticksuffix = "%", range = list(0, 100), title = ""),
     yaxis = list(ticksuffix="%", range = list(0, 100), title = ""),
