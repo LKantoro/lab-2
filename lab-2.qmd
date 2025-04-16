@@ -197,21 +197,24 @@ graph1_tibble = left_join(country_counts, vaccine_safe_counts, by = join_by(coun
 graph1_tibble$value = graph1_tibble$total_safe/graph1_tibble$total_surveyed
 
 graph1_tibble2 = left_join(graph1_tibble, countries_and_regions, by = join_by(country_name == country_name))
+
+graph1_tibble2 = graph1_tibble2 %>% filter(map_region != "Not Assigned")
 ```
 
 
 ```{r}
-graph1_tibble2 %>% ggplot(aes(x = value, fill = map_region)) +
-  geom_dotplot(binwidth = .02) + facet_grid(rows = vars(map_region)) +
+graph1_tibble2 %>% ggplot(aes(x = value, fill = map_region, color = map_region)) +
+  geom_dotplot(binwidth = .01) + 
+  facet_grid(rows = vars(map_region), axis.labels = "margins") +
   theme(panel.grid.minor = element_blank(), panel.grid.major.y = element_blank(), 
-  plot.title.position = "plot", axis.text.y = element_blank()) + 
-  #theme_minimal() +
-  labs(x = "Proportion", 
+  plot.title.position = "plot", axis.text.y = element_blank(), axis.ticks.y = element_blank()) + 
+  theme(strip.text = element_blank(), legend.position = "none") +
+  labs(x = "", 
        y = "",
-       title = "Proportion of People Who Believe Vaccines Are Very Effective By Country and Region")
-
-#change legend label, order by average or median
-
+       fill = "",
+       title = "Percent of People Who Believe Vaccines Are Effective By Country and Region") +
+  scale_x_continuous(labels = scales::percent) +
+  geom_text(aes(x = .5, y = .8, label = map_region))
 ```
 
 
