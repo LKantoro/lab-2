@@ -197,8 +197,10 @@ graph1_tibble = left_join(country_counts, vaccine_safe_counts, by = join_by(coun
 graph1_tibble$value = graph1_tibble$total_safe/graph1_tibble$total_surveyed
 
 graph1_tibble2 = left_join(graph1_tibble, countries_and_regions, by = join_by(country_name == country_name))
+```
 
 
+```{r}
 graph1_tibble2 %>% ggplot(aes(x = value, fill = map_region)) +
   geom_dotplot(binwidth = .02) + facet_grid(rows = vars(map_region)) +
   theme(panel.grid.minor = element_blank(), panel.grid.major.y = element_blank(), 
@@ -296,15 +298,11 @@ class(world_sf)
 
 
 ```{r}
-graph1_tibble2
-
-
-class(world_sf)
-
-
 graph2_df = right_join(graph1_tibble2, world_sf, by = join_by(country_name == NAME))
+```
 
-bins = c(0, .10, .20, .50, .7, .8, .9, 1)
+```{r}
+bins = c(0, .10, .20, .30, .4, .5, .6, .7, .8, .9)
 
 pal = colorBin("YlOrRd", domain = graph2_df$value, bins = bins)
 
@@ -312,9 +310,9 @@ pal = colorBin("YlOrRd", domain = graph2_df$value, bins = bins)
 #converting data.frame to sf: https://r-spatial.github.io/sf/reference/sf.html
 graph2_df = st_sf(graph2_df)
 
-graph2_df$value
 
-leaflet(graph2_df) %>% addTiles() %>% addPolygons(fillColor = ~value, weight = 2)
+leaflet(graph2_df) %>% addTiles() %>% 
+  addPolygons(fillColor = ~pal(value), weight = 2, opacity = 1, color = 'black')
 
 ```
 
@@ -373,21 +371,18 @@ vaccine_effective_counts
 ```
 
 ```{r}
-
 percent_effective = inner_join(country_counts, vaccine_effective_counts, by = join_by(country_name == country_name))
 
 
 percent_effective_and_safe = full_join(percent_effective, vaccine_safe_counts, by = join_by(country_name == country_name))
-
-percent_effective_and_safe
-
 
 percent_effective_and_safe$perc_safe = percent_effective_and_safe$total_safe/percent_effective_and_safe$total_surveyed * 100
 
 percent_effective_and_safe$perc_effective = percent_effective_and_safe$total_effective/percent_effective_and_safe$total_surveyed * 100
 
 
-percent_effective_and_safe
+percent_effective_and_safe = percent_effective_and_safe %>% 
+  mutate(perc_safe = round(perc_safe, 2), perc_effective = round(perc_effective, 2))
 
 ```
 
@@ -401,11 +396,11 @@ best_fit_line <- lm(perc_effective ~ perc_safe, data = percent_effective_and_saf
 
 
 fig = plot_ly(data = percent_effective_and_safe, x = ~perc_safe, y = ~perc_effective,
-    type = "scatter", text = ~country_name, color = ~map_region) %>%
+    type = "scatter", mode = "markers", text = ~country_name, color = ~map_region) %>%
   layout(plot_bgcolor='white',
-    xaxis = list(ticksuffix = "%", range = list(0, 100), title = ""),
+    xaxis = list(ticksuffix = "%", range = list(0, 100), title = "Believe Vaccines are Safe"),
     yaxis = list(ticksuffix="%", range = list(0, 100), title = ""),
-    title = "Belief in Vaccine Safety Versus Belief in Vaccine Effectiveness in Different Countries")
+    title = "Belief in Vaccine Effectiveness Versus Belief in Vaccine Safety in Different Countries")
   
 
 fig
@@ -414,3 +409,4 @@ fig
 #color by world region, subtitle
 
 ```
+
