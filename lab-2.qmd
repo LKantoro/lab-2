@@ -111,7 +111,6 @@ countriesstringsplit = str_split(wgm2018_dict[1,3], ',')
 countriesdf = as.data.frame(countriesstringsplit, col.names = c("country")) %>%
   filter(!row_number() %in% c(145))
 
-
 #creating a two column data frame about the '=' and changing the code to numeric
 countriesdf = countriesdf %>% 
   separate_wider_delim(country, delim = "=", names = c("country_code", "country_name")) %>% 
