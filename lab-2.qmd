@@ -1,8 +1,11 @@
 ---
 title: "Lab 2"
 subtitle: "Advanced Data Visualization"
+author: "Lucas Kantorowski"
 editor: source
 embed-resources: true
+execute: 
+  warning: false
 ---
 
 
@@ -37,7 +40,7 @@ Below is an example of a less-than-ideal visualization from the collection
 linked above. It comes to us from data provided for the [Wellcome Global Monitor 2018 report](https://wellcome.ac.uk/reports/wellcome-global-monitor/2018) by the 
 Gallup World Poll:
 
-![](images/bad-wellcome-graph.jpg)
+![](image/bad-wellcome-graph.jpg)
 
 1. While there are certainly issues with this image, do your best to tell the
 story of this graph in words. That is, what is this graph telling you? What do
@@ -111,20 +114,27 @@ same story better.
 #make dotplot
 #facet by global region (Regions_Report)
 
+
+#creating string based on list provided
 countriesstringsplit = str_split(wgm2018_dict[1,3], ',')
 
-
-countriesdf = as.data.frame(countriesstringsplit, col.names = c("country"))
-
-countriesdf = countriesdf %>%
+#changing the vector into a data frame and eliminating the last row, which was blank
+countriesdf = as.data.frame(countriesstringsplit, col.names = c("country")) %>%
   filter(!row_number() %in% c(145))
 
-countriesdf = countriesdf %>% separate_wider_delim(country, delim = "=", names = c("country_code", "country_name"))
 
-countriesdf = countriesdf %>% mutate(country_code = as.numeric(country_code))
+#countriesdf = countriesdf
+
+
+#creating a two column data frame about the '='
+countriesdf = countriesdf %>% 
+  separate_wider_delim(country, delim = "=", names = c("country_code", "country_name")) %>% 
+  mutate(country_code = as.numeric(country_code))
+
+
+#changing the code to numeric
+countriesdf = countriesdf 
 ```
-
-
 
 ```{r}
 #merging to make full dataset have country names
@@ -132,22 +142,27 @@ wgm2018_full_new = left_join(wgm2018_full, countriesdf, by = join_by(WP5 == coun
 ```
 
 
-
-
 ```{r}
+
+#similar process for splitting regions, as was done above for countries
+
 regionsstringsplit = str_split(wgm2018_dict[57,3], ',')
 
-
-regionsdf = as.data.frame(regionsstringsplit, col.names = c("region"))
-
-regionsdf = regionsdf %>%
+regionsdf = as.data.frame(regionsstringsplit, col.names = c("region")) %>%
   filter(!row_number() %in% c(20))
 
+regionsdf = regionsdf %>% separate_wider_delim(region, delim = "=", names = c("region_code", "region_name")) %>% 
+  mutate(region_code = as.numeric(region_code))
 
-regionsdf = regionsdf %>% separate_wider_delim(region, delim = "=", names = c("region_code", "region_name"))
 
-
-regionsdf = regionsdf %>% mutate(region_code = as.numeric(region_code))
+#creating a new column for world region to be used to split the graph
+#Asia - 9, 10, 11, 12, 18
+#Sub-Saharan Africa - 1, 2, 4, 5
+#Americas - 6, 7, 8,
+#Europe - 15, 16, 17
+#Middle East and North Africa - 3, 13
+#Former Soviet Union - 14
+#Other - 0
 
 regionsdf['map_region'] = case_when(
           regionsdf[['region_code']] %in% c(9,10,11,12, 18) ~ 'Asia and Australia',
@@ -157,42 +172,38 @@ regionsdf['map_region'] = case_when(
           regionsdf[['region_code']] %in% c(3,13) ~ 'Middle East and North Africa',
           regionsdf[['region_code']] == 14 ~ 'Former Soviet Union',
           regionsdf[['region_code']] == 0 ~ 'Not Assigned')
-
-#create a new column of region
-#Asia 9, 10, 11, 12, 18
-#Middle East and North Africa 3, 13
-#Sub-Saharan Africa 1, 2, 4, 5
-#Americas 6, 7, 8,
-#Europe 15, 16, 17
-#Former Soviet Union 14
 ```
 
 ```{r}
 #merging to add region names to big data frame
 wgm2018_full_new2 = left_join(wgm2018_full_new, regionsdf, by = join_by(Regions_Report == region_code))
 
+#removing duplicates
 countries_and_regions = distinct(wgm2018_full_new2[61:63])
 ```
 
 ```{r}
-country_counts = wgm2018_full_new2 %>% group_by(country_name) %>% summarise(total_count = n()) %>%
+#finding percentage who think vaccines are safe based on answering '1' to Q25
+
+country_counts = wgm2018_full_new2 %>% group_by(country_name) %>% 
+  summarise(total_count = n()) %>%
   rename('total_surveyed' = total_count)
 
 vaccine_safe_counts = wgm2018_full_new2 %>% 
   group_by(country_name, Q25) %>% summarise(total_count = n()) %>%
-  rename('total_safe' = total_count)
+  rename('total_safe' = total_count) %>% filter(Q25 == '1')
 
-vaccine_safe_counts = filter(vaccine_safe_counts, Q25 == '1')
 ```
 
 ```{r}
+#joining counts
 graph1_tibble = left_join(country_counts, vaccine_safe_counts, by = join_by(country_name == country_name))
 
+#dividing people who think safe by people surveyed to find percentage
 graph1_tibble$value = graph1_tibble$total_safe/graph1_tibble$total_surveyed
 
-graph1_tibble2 = left_join(graph1_tibble, countries_and_regions, by = join_by(country_name == country_name))
-
-graph1_tibble2 = graph1_tibble2 %>% filter(map_region != "Not Assigned")
+graph1_tibble2 = left_join(graph1_tibble, countries_and_regions, by = join_by(country_name == country_name)) %>% 
+  filter(map_region != "Not Assigned")
 ```
 
 
@@ -229,7 +240,7 @@ you think the authors meant to convey with it?
 
 - Page 55, Chart 3.3: "Map of countries according to levels of Trust in Scientists"
 
-- Q11C, page 55, level of trust of scientist by country
+- Q11C, page 55, "Map of countries according to levels of Trust in Scientists"
 
 - The graph is demonstrating how trust in scientists varies throughout the world. Darker shades of green represent higher trust in scientists.
 
@@ -243,11 +254,11 @@ you think the authors meant to convey with it?
 9. Now that you're versed in the grammar of graphics (ggplot), list the
 aesthetics used and which variables are specified for each.
 
-- addTiles for the countries
+- addPolygons is used to extract the geometries of countries. It's aesthetics have the country color and label based on percentage of people who have high trust in scientists.
 
 10. What type of graph would you call this?
 
-- This is a chloropeth map
+- This is a chloropleth map
 
 11. List all of the problems or things you would improve about this graph.  
 
@@ -260,67 +271,66 @@ aesthetics used and which variables are specified for each.
 ```{r}
 #| label: second-improved-visualization
 
-#download data, create a tibble, separate_wider
-#https://r-graph-gallery.com/183-choropleth-map-with-leaflet.html
-
+#finding country geometries: https://r-graph-gallery.com/183-choropleth-map-with-leaflet.html
 
 download.file(
   "https://raw.githubusercontent.com/holtzy/R-graph-gallery/master/DATA/world_shape_file.zip",
   destfile = "DATA/world_shape_file.zip"
 )
 
-system("unzip DATA/world_shape_file.zip")
-
+#system("unzip DATA/world_shape_file.zip")
 
 world_sf <- read_sf(paste0(
   getwd(), "/DATA/world_shape_file/",
   "TM_WORLD_BORDERS_SIMPL-0.3.shp"
 ))
-
-world_sf <- world_sf %>%
-  mutate(POP2005 = ifelse(POP2005 == 0, NA, round(POP2005 / 1000000, 2)))
-
-
-
-# Basic choropleth with leaflet
-#m <- leaflet(world_sf) %>%
-#  addTiles() %>%
-#  setView(lat = 10, lng = 0, zoom = 2) %>%
-#  addPolygons(fillColor = ~ mypalette(POP2005), stroke = FALSE)
-
-#m
-class(world_sf)
-
 ```
 
 
 ```{r}
+#joining country geometries and overall data frame together
 graph2_df = right_join(graph1_tibble2, world_sf, by = join_by(country_name == NAME))
-```
 
-```{r}
+#using the same value as used in the above dotplot
 graph2_df = graph2_df %>% mutate(value = round(value, 2) * 100)
 
-bins = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
-
-pal = colorBin("RdYlGn", domain = graph2_df$value, bins = bins)
+```
 
 
-#converting data.frame to sf: https://r-spatial.github.io/sf/reference/sf.html
-graph2_df = st_sf(graph2_df)
-
-
-
+```{r}
+trust_scientists_counts = wgm2018_full_new2 %>% 
+  group_by(country_name, Q11C) %>% summarise(total_count = n()) %>%
+  rename('total_trust' = total_count) %>% filter(Q11C == '1')
 ```
 
 ```{r}
-leaflet(graph2_df) %>% addTiles() %>% 
-  addPolygons(fillColor = ~pal(value), weight = .2,  opacity = 1, color = 'black', popup = ~country_name, label = ~value) %>%
-  addLegend(pal = pal, values = ~value, position = "bottomleft", title = "",
-            na.label = "Data Not Available", labFormat = labelFormat(suffix = "%")) %>%
-  addControl(c("People Who Believe Vaccines are Safe"), position = "topleft")
-  #
+graph2_tibble = left_join(country_counts, trust_scientists_counts, by = join_by(country_name == country_name))
 
+
+graph2_tibble$trust_value = round(graph2_tibble$total_trust/graph1_tibble$total_surveyed * 100,2)
+
+graph2_df2 = full_join(graph2_df, graph2_tibble, by = join_by(country_name == country_name))
+```
+
+
+```{r}
+#creating bins for coloring
+bins = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
+
+pal = colorBin("RdYlGn", domain = graph2_df2$trust_value, bins = bins)
+
+class(graph2_df)
+#converting data.frame to sf for graphing using leaflet: https://r-spatial.github.io/sf/reference/sf.html
+graph2_df2 = st_sf(graph2_df2)
+```
+
+```{r}
+leaflet(graph2_df2) %>% addTiles() %>% 
+  addPolygons(fillColor = ~pal(trust_value), weight = .2,  opacity = 1, color = 'black',
+              popup = ~country_name, label = ~trust_value, stroke = FALSE) %>%
+  addLegend(pal = pal, values = ~trust_value, position = "bottomleft", title = "", 
+            labFormat = labelFormat(suffix = "%")) %>%
+  addControl(c("People Who Have High Trust In Scientists"), position = "topleft")
 ```
 
 
@@ -345,7 +355,8 @@ you think the authors meant to convey with it?
 15. Now that you're versed in the grammar of graphics (ggplot), list the
 aesthetics used and which variables are specified for each.
 
-- plotly
+- plotly is used. The graph aesthetics are percentage who think vaccines are safe on the x-axis, and percentage who think vaccines are safe on the y-axis. The color aesthetic is the global region of the country, with each individual country having a hover label.
+
 
 16. What type of graph would you call this?
 
@@ -365,12 +376,16 @@ aesthetics used and which variables are specified for each.
 ```{r}
 #| label: third-improved-visualization
 
-vaccine_effective_counts = wgm2018_full_new2 %>% group_by(country_name, map_region, Q26) %>% summarise(total_count = n()) %>% rename('total_effective'= total_count)
+#finding the count of people who think vaccines are effective
+vaccine_effective_counts = wgm2018_full_new2 %>% group_by(country_name, map_region, Q26) %>% 
+  summarise(total_count = n()) %>% rename('total_effective'= total_count) %>% 
+  filter(Q26 == 1)
 
-vaccine_effective_counts = filter(vaccine_effective_counts, Q26 == 1)
+#vaccine_effective_counts = filter(vaccine_effective_counts, Q26 == 1)
 ```
 
 ```{r}
+#finding percent of people who think vaccines are effective and safe, respectively
 percent_effective = inner_join(country_counts, vaccine_effective_counts, by = join_by(country_name == country_name))
 
 
@@ -387,26 +402,13 @@ percent_effective_and_safe = percent_effective_and_safe %>%
 ```
 
 ```{r}
-#scales package for percentage label
-
-
-
 best_fit_line <- lm(perc_effective ~ perc_safe, data = percent_effective_and_safe)
 
-
-
-fig = plot_ly(data = percent_effective_and_safe, x = ~perc_safe, y = ~perc_effective,
+plot_ly(data = percent_effective_and_safe, x = ~perc_safe, y = ~perc_effective,
     type = "scatter", mode = "markers", text = ~country_name, color = ~map_region) %>%
   layout(plot_bgcolor='white',
     xaxis = list(ticksuffix = "%", range = list(0, 100), title = "Believe Vaccines are Safe"),
     yaxis = list(ticksuffix="%", range = list(0, 100), title = ""),
     title = "Belief in Vaccine Effectiveness Versus Belief in Vaccine Safety in Different Countries")
-  
-
-fig
-
-
-#color by world region, subtitle
-
 ```
 
