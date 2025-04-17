@@ -104,17 +104,6 @@ same story better.
 ```{r}
 #| label: new-and-improved-visualization
 
-
-#Q25
-
-#create a new table
-#filter on values of 1,2,3,4,5
-#find percentage who answered 1
-#take mean per country
-#make dotplot
-#facet by global region (Regions_Report)
-
-
 #creating string based on list provided
 countriesstringsplit = str_split(wgm2018_dict[1,3], ',')
 
@@ -123,17 +112,10 @@ countriesdf = as.data.frame(countriesstringsplit, col.names = c("country")) %>%
   filter(!row_number() %in% c(145))
 
 
-#countriesdf = countriesdf
-
-
-#creating a two column data frame about the '='
+#creating a two column data frame about the '=' and changing the code to numeric
 countriesdf = countriesdf %>% 
   separate_wider_delim(country, delim = "=", names = c("country_code", "country_name")) %>% 
   mutate(country_code = as.numeric(country_code))
-
-
-#changing the code to numeric
-countriesdf = countriesdf 
 ```
 
 ```{r}
@@ -143,7 +125,6 @@ wgm2018_full_new = left_join(wgm2018_full, countriesdf, by = join_by(WP5 == coun
 
 
 ```{r}
-
 #similar process for splitting regions, as was done above for countries
 
 regionsstringsplit = str_split(wgm2018_dict[57,3], ',')
@@ -156,13 +137,6 @@ regionsdf = regionsdf %>% separate_wider_delim(region, delim = "=", names = c("r
 
 
 #creating a new column for world region to be used to split the graph
-#Asia - 9, 10, 11, 12, 18
-#Sub-Saharan Africa - 1, 2, 4, 5
-#Americas - 6, 7, 8,
-#Europe - 15, 16, 17
-#Middle East and North Africa - 3, 13
-#Former Soviet Union - 14
-#Other - 0
 
 regionsdf['map_region'] = case_when(
           regionsdf[['region_code']] %in% c(9,10,11,12, 18) ~ 'Asia and Australia',
@@ -190,8 +164,10 @@ country_counts = wgm2018_full_new2 %>% group_by(country_name) %>%
   rename('total_surveyed' = total_count)
 
 vaccine_safe_counts = wgm2018_full_new2 %>% 
-  group_by(country_name, Q25) %>% summarise(total_count = n()) %>%
-  rename('total_safe' = total_count) %>% filter(Q25 == '1')
+  group_by(country_name, Q25) %>% 
+  summarise(total_count = n()) %>%
+  rename('total_safe' = total_count) %>% 
+  filter(Q25 == '1')
 
 ```
 
@@ -240,8 +216,6 @@ you think the authors meant to convey with it?
 
 - Page 55, Chart 3.3: "Map of countries according to levels of Trust in Scientists"
 
-- Q11C, page 55, "Map of countries according to levels of Trust in Scientists"
-
 - The graph is demonstrating how trust in scientists varies throughout the world. Darker shades of green represent higher trust in scientists.
 
 - The authors want the reader to discern what causes the population of certain countries to have higher trust in scientists than others.
@@ -278,7 +252,7 @@ download.file(
   destfile = "DATA/world_shape_file.zip"
 )
 
-#system("unzip DATA/world_shape_file.zip")
+system("unzip DATA/world_shape_file.zip")
 
 world_sf <- read_sf(paste0(
   getwd(), "/DATA/world_shape_file/",
@@ -298,16 +272,18 @@ graph2_df = graph2_df %>% mutate(value = round(value, 2) * 100)
 
 
 ```{r}
+#getting the count of high trust in scientists by country
 trust_scientists_counts = wgm2018_full_new2 %>% 
   group_by(country_name, Q11C) %>% summarise(total_count = n()) %>%
   rename('total_trust' = total_count) %>% filter(Q11C == '1')
 ```
 
 ```{r}
+#joining with count of people surveyed
 graph2_tibble = left_join(country_counts, trust_scientists_counts, by = join_by(country_name == country_name))
 
-
-graph2_tibble$trust_value = round(graph2_tibble$total_trust/graph1_tibble$total_surveyed * 100,2)
+#calculating percent of people who have high trust in scientists
+graph2_tibble$trust_value = round(graph2_tibble$total_trust/graph1_tibble$total_surveyed * 100, 2)
 
 graph2_df2 = full_join(graph2_df, graph2_tibble, by = join_by(country_name == country_name))
 ```
@@ -319,7 +295,6 @@ bins = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
 
 pal = colorBin("RdYlGn", domain = graph2_df2$trust_value, bins = bins)
 
-class(graph2_df)
 #converting data.frame to sf for graphing using leaflet: https://r-spatial.github.io/sf/reference/sf.html
 graph2_df2 = st_sf(graph2_df2)
 ```
@@ -344,7 +319,7 @@ Be sure to cite both the page number and figure title. Do your best to tell the
 story of this graph in words. That is, what is this graph telling you? What do
 you think the authors meant to convey with it?
 
-- page 112, Q25,26, Chart 5.4: "Scatterplot exploring people’s perceptions of vaccine safety and vaccine effectiveness"
+- Page 112, Q25,26, Chart 5.4: "Scatterplot exploring people’s perceptions of vaccine safety and vaccine effectiveness"
 
 - The graph is telling us that countries with higher distrust of vaccines tend to also believe that they are not effective. The authors included a line of best fit to demonstrate the positive trend between lack of vaccine trust and lack of a belief in vaccine effectiveness.
 
@@ -388,22 +363,22 @@ vaccine_effective_counts = wgm2018_full_new2 %>% group_by(country_name, map_regi
 #finding percent of people who think vaccines are effective and safe, respectively
 percent_effective = inner_join(country_counts, vaccine_effective_counts, by = join_by(country_name == country_name))
 
-
+#joining effective counts with safe counts
 percent_effective_and_safe = full_join(percent_effective, vaccine_safe_counts, by = join_by(country_name == country_name))
 
+#calculating percent of people who think vaccines are safe
 percent_effective_and_safe$perc_safe = percent_effective_and_safe$total_safe/percent_effective_and_safe$total_surveyed * 100
 
+#calculating percent of people who think vaccines are effective
 percent_effective_and_safe$perc_effective = percent_effective_and_safe$total_effective/percent_effective_and_safe$total_surveyed * 100
 
-
+#rounding to 2 decimal places for cleanliness
 percent_effective_and_safe = percent_effective_and_safe %>% 
   mutate(perc_safe = round(perc_safe, 2), perc_effective = round(perc_effective, 2))
 
 ```
 
 ```{r}
-best_fit_line <- lm(perc_effective ~ perc_safe, data = percent_effective_and_safe)
-
 plot_ly(data = percent_effective_and_safe, x = ~perc_safe, y = ~perc_effective,
     type = "scatter", mode = "markers", text = ~country_name, color = ~map_region) %>%
   layout(plot_bgcolor='white',
