@@ -251,7 +251,7 @@ download.file(
   destfile = "DATA/world_shape_file.zip"
 )
 
-system("unzip DATA/world_shape_file.zip")
+#system("unzip DATA/world_shape_file.zip")
 
 world_sf <- read_sf(paste0(
   getwd(), "/DATA/world_shape_file/",
